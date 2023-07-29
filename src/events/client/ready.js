@@ -12,7 +12,7 @@ export default class Ready extends BaseEvent {
      * @param {import('discord.js').Client} client 
      */
     async run (client) {
-        console.log(`Shard (#${client.shard.ids}): ${client.user.tag} listo!`);
+        console.log(`Shard (#${client.shard.ids}): ${client.user.tag} en conexión con Discord!`);
         this.connectWebSocket(client);
 
         for (const guild of await client.guilds.fetch()) {
@@ -23,6 +23,45 @@ export default class Ready extends BaseEvent {
             }
             client.guilds.cache.get(guild[0]).customData = response.data;            
         }
+
+        setInterval(async () => {
+            for (const guild of client.guilds.cache) {
+                let warnings = await this.get(guild[0], '/activeWarnings');
+                warnings.data.forEach(async (warning) => {
+                    if (warning.expires > 0 && (warning.date + warning.expires) < Date.now()) {
+                        await this.post(guild[0], '/warnings', {
+                            user_id: warning.user_id,
+                            type: warning.type,
+                            reason: warning.reason,
+                            moderator: warning.moderator,
+                            date: warning.date,
+                            id: warning.id,
+                            expires: warning.expires,
+                            active: false,                  
+                        });
+
+                        if (warning.type == 'ban') {
+                            guild[1].bans.remove(warning.user_id, 'Baneo finalizado').catch((e) => (e))
+                        } else if (warning.type == 'mute' && guild[1].customData.muteRole) {
+                            guild[1].members.fetch(warning.user_id)
+                                .then((member) => {
+                                    if (guild[1].customData.muteRole) {
+                                        member.roles.remove(guild[1].customData.muteRole, 'Muteo finalizado')
+                                            .catch((e) => (e));
+                                    } else {
+                                        member.disableCommunicationUntil(null, 'Muteo finalizado')
+                                            .catch((e) => (e));
+                                    }
+                                })
+                                .catch((e) => e);
+                        }
+                    } 
+                })
+            }
+        }, 30000);
+
+        client.ready = true;
+        console.log(`Shard (#${client.shard.ids}): ${client.user.tag} listo para recibir eventos!`);
     }
 
     /**
@@ -54,8 +93,8 @@ export default class Ready extends BaseEvent {
         });
         ws.on('error', (err) => {
             if (err.message.startsWith('connect ECONNREFUSED')) {
-                console.log(`Shard (#${client.shard.ids}): No se pudo conectar al websocket de YN9, reconectando websocket...`);
-                setTimeout(() => this.connectWebSocket(client), 1000);
+                console.log(`Shard (#${client.shard.ids}): No se pudo conectar al websocket de YN9, reconectando websocket dentro de (1 minuto)...`);
+                setTimeout(() => this.connectWebSocket(client), 60_000);
             } else {
                 console.log(`Shard (#${client.shard.ids}) Error inesperado en WebSocket...`)
             }

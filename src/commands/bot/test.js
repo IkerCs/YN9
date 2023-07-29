@@ -6,7 +6,7 @@ export default class Test extends BaseCommand {
         super();
         this.name = 'test';
         this.aliases = ['eval'],
-        this.category = 'bot';
+        this.category = 'debug';
         this.permissions = {
             user: [],
             client: [],

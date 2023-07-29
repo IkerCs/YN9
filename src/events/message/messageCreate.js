@@ -12,6 +12,7 @@ export default class Message extends BaseEvent {
      * @param {import('discord.js').Message} message 
      */
     async run (client, message) {
+        if (!client.ready) return;
         if (message.author.bot) return;
         if (!message.guild) return;
         if (!message.author) return;
@@ -25,12 +26,16 @@ export default class Message extends BaseEvent {
             }
         }
 
+        await auto(client, message);
+
         const args = message.content.slice(message.guild.prefix.length).trim().split(/\s+/g);
         const command = args.shift().toLowerCase();
 
         if (message.content.toLowerCase().startsWith(message.guild.prefix.toLowerCase())) {
             const cmd = client.commands.get(command) || client.commands.find((c) => c.aliases && c.aliases.includes(command));
             if (cmd) {
+                if (cmd.category == 'debug' && !client.keys.ALLOWED_DEBUG.includes(message.author.id)) return;
+                if (cmd.category == 'integrated') return;
                 const permissionsForChannel = message.channel.permissionsFor(client.user);
                 if (!permissionsForChannel.has('SEND_MESSAGES')
                  || !permissionsForChannel.has('EMBED_LINKS')
@@ -87,10 +92,11 @@ export default class Message extends BaseEvent {
                 if (!clientPermissions) return message.reply({ embeds: [client.embed('No tengo los permisos necesarios para ejecutar esa acción.', message.author)] }).catch((c) => c);
                 if (cooldown && !message.member.permissionsIn(message.channel).has('ManageMessages')) return message.reply({ embeds: [client.embed(`¡Espera! Podrás volver a utilizar el comando dentro de \`${this.humanize(remaining)}\``, message.author)] }).catch((c) => c);
                 const specificArgs = new Map();
+
                 for (const argument of cmd.args) {
                     let arg_error = false;
-                    const argument_value = args.slice(argument.start, argument.end || args.length);
-                    if (argument.end && argument_value.length != (argument.end - argument.start)) arg_error = true;
+                    const argument_value = args.slice(argument.start, argument.end ?? args.length);
+                    if (argument.end && argument_value.length != (argument.end - argument.start) && argument.required) arg_error = true;
                     if (argument.required && argument_value.length == 0) arg_error = true;
                     if (arg_error) return message.reply({ embeds: [client.embed(`Asegúrate de utilizar este comando correctamente, utiliza \`${message.guild.prefix}help ${cmd.name}\` para obtener más información.`, message.author)]});
                     specificArgs.set(argument.name, argument_value.join(' '));

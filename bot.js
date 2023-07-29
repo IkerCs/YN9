@@ -12,6 +12,7 @@ const client = new Discord.Client({
         Discord.GatewayIntentBits.Guilds,
         Discord.GatewayIntentBits.GuildMessages,
         Discord.GatewayIntentBits.GuildModeration,
+        Discord.GatewayIntentBits.GuildMembers,
         Discord.GatewayIntentBits.MessageContent,
     ],
     waitGuildTimeout: 45_000
@@ -19,7 +20,18 @@ const client = new Discord.Client({
 
 process.env.TZ = 'Africa/Abidjan';
 
+process.stdin.on('data', (data) => {
+    if (data.toString() == 'rs') return;
+    try {
+        const result = eval(data.toString());
+        console.log(result);
+    } catch (error) {
+        console.log(error);
+    }
+});
+
 (async () => {
+    client.ready = false;
     client.media = new Map();
     client.antiflood = new Map();
     client.antiinvites = new Map();
@@ -30,8 +42,9 @@ process.env.TZ = 'Africa/Abidjan';
     client.logs = new Map();
     client.reactlogs = new Map();
     client.stocks = new Map();
-    client.emojis.no = '<:YN9_NO:830226991025487913>';
-    client.emojis.yes = '<:YN9_SI:830226925377028126>';
+    client.emj = {};
+    client.emj.no = '<:YN9_NO:830226991025487913>';
+    client.emj.yes = '<:YN9_SI:830226925377028126>';
     client.keys = Keys;
     client.color = Keys.COLOR;
     client.commandsUsed = 0;

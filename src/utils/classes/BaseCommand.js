@@ -32,14 +32,30 @@ export default class BaseCommand {
         return string;
     }
 
-    humanize (ms = 0) {
-        return humanizeDuration(ms, {
-            language: 'es',
-            round: true,
-            conjunction: ' y ',
-            serialComma: false,
-            units: ['y', 'mo', 'w', 'd', 'h', 'm', 's'],
-        });
+    humanize (ms = 0, size = 'normal') {
+        if (size == 'normal') {
+            return humanizeDuration(ms, {
+                language: 'es',
+                round: true,
+                conjunction: ' y ',
+                serialComma: false,
+                units: ['y', 'mo', 'w', 'd', 'h', 'm', 's'],
+            });    
+        } else if (size == 'small') {
+            return humanizeDuration(ms, {
+                language: 'es',
+                round: true,
+                conjunction: ' ',
+                serialComma: false,
+                largest: true,
+                units: ['mo', 'w', 'd', 'm', 's']
+            })
+        }
+    }
+
+    resolveId (string = '') {
+        const matches = string.match(/\b\d{17,20}\b/g);
+        return matches ? matches[0] : false;
     }
 
     get = get;
